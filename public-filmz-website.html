@@ -1,0 +1,476 @@
+<!--
+Public Filmz - Movie Review Website (Single-file HTML/CSS/JS)
+Features:
+- Responsive, phone-first design
+- Reviews listing with search, filters, categories, pagination
+- Admin mode (simple password) to add/edit/delete reviews from the phone
+- Saves data in browser localStorage; supports Export/Import JSON
+- Upload poster images (stored as base64) and rating system
+- SEO-friendly meta tags and structured content for each review
+- Easy to host (just upload this single HTML file on any static host)
+
+How to use:
+- Open this file in your phone browser.
+- Tap the ⚙️ Admin button, enter password: admin123
+- Add/Edit/Delete reviews. Data persists in browser localStorage.
+- Use Export/Import to backup or move content between devices.
+
+Note: This is a static, client-side solution (no server). For multi-user publishing or permanent hosting, host on GitHub Pages/Netlify and optionally move data to a backend later.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Public Filmz — Movie Reviews</title>
+  <meta name="description" content="Public Filmz: Phone-friendly movie reviews, ratings, trailers, and detailed write-ups. Add and manage reviews from your phone." />
+  <meta name="theme-color" content="#0b1223">
+  <meta property="og:title" content="Public Filmz - Movie Reviews">
+  <meta property="og:description" content="Phone-friendly movie reviews, ratings, trailers, and detailed write-ups.">
+  <meta property="og:image" content="">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230b1223'/%3E%3Ctext x='50' y='57' font-size='40' text-anchor='middle' fill='white' font-family='Arial'%3EPF%3C/text%3E%3C/svg%3E">
+  <style>
+    /* Basic reset */
+    :root{
+      --bg:#0b1223; --card:#0f1a2b; --muted:#9aa6bf; --accent:#ff6b6b; --glass: rgba(255,255,255,0.03);
+      --maxw:980px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;color:#e8eef8;background:linear-gradient(180deg,#061022 0%, #071428 100%);-webkit-font-smoothing:antialiased}
+    .wrap{max-width:var(--maxw);margin:0 auto;padding:18px}
+
+    /* Header */
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#ff9a6b);display:flex;align-items:center;justify-content:center;color:#071428;font-weight:700;font-size:20px}
+    h1{margin:0;font-size:18px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    /* controls */
+    .controls{display:flex;gap:8px;align-items:center}
+    button, .btn{background:var(--card);border:0;padding:8px 10px;border-radius:10px;color:#dfe9ff;cursor:pointer;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04)}
+    .btn.admin{background:linear-gradient(90deg,#0f6bff,#6b8bff)}
+    input,select,textarea{padding:10px;border-radius:10px;border:0;background:var(--glass);color:#e7f0ff;width:100%}
+
+    /* layout */
+    .grid{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:900px){.grid{grid-template-columns:320px 1fr}}
+
+    /* sidebar */
+    .sidebar{position:sticky;top:16px;padding:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px}
+    .search{display:flex;gap:8px;margin-bottom:12px}
+    .filters{display:flex;flex-direction:column;gap:8px}
+
+    /* list */
+    .reviews{display:flex;flex-direction:column;gap:12px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:10px;border-radius:12px;display:flex;gap:10px;align-items:flex-start}
+    .poster{width:88px;height:120px;border-radius:8px;background:#081522;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
+    .meta{flex:1}
+    .title{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .title h3{margin:0;font-size:16px}
+    .rating{font-weight:700;color:var(--accent)}
+    .excerpt{color:var(--muted);font-size:13px;margin-top:6px}
+
+    /* pagination */
+    .pagination{display:flex;gap:8px;justify-content:center;margin-top:6px}
+
+    /* modal / admin */
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px}
+    .modal.show{display:flex}
+    .modal-card{background:linear-gradient(180deg,#071428,#0b1223);width:100%;max-width:720px;border-radius:12px;padding:12px;box-shadow:0 12px 40px rgba(2,6,23,0.7)}
+    .form-grid{display:grid;grid-template-columns:1fr;gap:8px}
+    @media(min-width:700px){.form-grid{grid-template-columns:1fr 300px}}
+
+    .small{font-size:12px;color:var(--muted)}
+    footer{margin:18px 0;color:var(--muted);text-align:center}
+
+    /* chips */
+    .chip{display:inline-block;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,0.03);font-size:12px}
+
+    /* utilities */
+    .row{display:flex;gap:8px;align-items:center}
+    .hidden{display:none}
+    .muted{color:var(--muted)}
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">PF</div>
+        <div>
+          <h1>Public Filmz</h1>
+          <p class="lead">Phone-first movie reviews — rate, write, and share.</p>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="importBtn" title="Import reviews">Import</button>
+        <button class="btn" id="exportBtn" title="Export reviews">Export</button>
+        <button class="btn admin" id="adminBtn">⚙️ Admin</button>
+      </div>
+    </header>
+
+    <main class="grid">
+      <aside class="sidebar">
+        <div class="search">
+          <input id="q" placeholder="Search title, cast, director..." />
+          <button class="btn ghost" id="searchBtn">Search</button>
+        </div>
+        <div class="filters">
+          <label class="small">Category</label>
+          <select id="categoryFilter">
+            <option value="">All</option>
+          </select>
+
+          <label class="small">Minimum Rating</label>
+          <select id="minRating">
+            <option value="0">Any</option>
+            <option value="1">1+</option>
+            <option value="2">2+</option>
+            <option value="3">3+</option>
+            <option value="4">4+</option>
+            <option value="5">5</option>
+          </select>
+
+          <label class="small">Sort by</label>
+          <select id="sortBy">
+            <option value="new">Newest</option>
+            <option value="rating">Rating</option>
+            <option value="title">Title</option>
+          </select>
+
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn" id="clearFilters">Clear</button>
+            <button class="btn" id="addReviewBtn">+ Add Review</button>
+          </div>
+        </div>
+      </aside>
+
+      <section>
+        <div class="reviews" id="reviewsList"></div>
+        <div class="pagination" id="pagination"></div>
+      </section>
+    </main>
+
+    <footer>
+      Built for <strong>Public Filmz</strong> • Edit from your phone • Admin password: <span class="chip">admin123</span>
+    </footer>
+  </div>
+
+  <!-- Modal: Admin / Add Edit -->
+  <div class="modal" id="modal">
+    <div class="modal-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 id="modalTitle">Add Review</h2>
+        <div class="row"><button class="btn" id="closeModal">Close</button></div>
+      </div>
+      <div style="height:8px"></div>
+      <div class="form-grid">
+        <div>
+          <label class="small">Movie Title</label>
+          <input id="m_title" placeholder="e.g., Dangal" />
+          <label class="small">Year</label>
+          <input id="m_year" placeholder="2024" />
+          <label class="small">Director</label>
+          <input id="m_director" placeholder="Director name" />
+          <label class="small">Cast (comma separated)</label>
+          <input id="m_cast" placeholder="Actor1, Actor2" />
+
+          <label class="small">Category</label>
+          <input id="m_category" placeholder="Drama, Action, Comedy" />
+
+          <label class="small">Rating (1-5)</label>
+          <select id="m_rating">
+            <option>5</option>
+            <option>4</option>
+            <option>3</option>
+            <option>2</option>
+            <option>1</option>
+          </select>
+
+          <label class="small">Trailer URL (YouTube)</label>
+          <input id="m_trailer" placeholder="https://youtube.com/watch?v=..." />
+
+          <label class="small">Review Content</label>
+          <textarea id="m_content" rows="6" placeholder="Write your review..."></textarea>
+
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn" id="saveReview">Save Review</button>
+            <button class="btn ghost" id="deleteReviewBtn">Delete</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="small">Poster Image</label>
+          <div style="margin:8px 0">
+            <div class="poster" id="previewPoster">No image</div>
+          </div>
+          <input type="file" id="posterFile" accept="image/*" />
+
+          <label class="small">Tags / Keywords</label>
+          <input id="m_tags" placeholder="biopic, sports" />
+
+          <label class="small">Short Excerpt (for listing)</label>
+          <input id="m_excerpt" placeholder="Short 1-2 line excerpt" />
+
+          <label class="small">Publish Date</label>
+          <input id="m_date" type="date" />
+
+          <div style="height:12px"></div>
+          <div class="small muted">Tip: Use Export to backup. Import to restore from another device.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  // App state
+  const LS_KEY = 'public_filmz_data_v1';
+  const ADMIN_PWD = 'admin123';
+
+  // DOM
+  const reviewsList = document.getElementById('reviewsList');
+  const qInput = document.getElementById('q');
+  const categoryFilter = document.getElementById('categoryFilter');
+  const minRating = document.getElementById('minRating');
+  const sortBy = document.getElementById('sortBy');
+  const pagination = document.getElementById('pagination');
+
+  const modal = document.getElementById('modal');
+  const modalTitle = document.getElementById('modalTitle');
+  const addReviewBtn = document.getElementById('addReviewBtn');
+  const closeModal = document.getElementById('closeModal');
+  const saveReview = document.getElementById('saveReview');
+  const deleteReviewBtn = document.getElementById('deleteReviewBtn');
+  const posterFile = document.getElementById('posterFile');
+  const previewPoster = document.getElementById('previewPoster');
+
+  // Form fields
+  const f = {
+    id: document.createElement('input'),
+    title: document.getElementById('m_title'),
+    year: document.getElementById('m_year'),
+    director: document.getElementById('m_director'),
+    cast: document.getElementById('m_cast'),
+    category: document.getElementById('m_category'),
+    rating: document.getElementById('m_rating'),
+    trailer: document.getElementById('m_trailer'),
+    content: document.getElementById('m_content'),
+    tags: document.getElementById('m_tags'),
+    excerpt: document.getElementById('m_excerpt'),
+    date: document.getElementById('m_date')
+  };
+  f.id.type = 'hidden';
+
+  // Admin
+  const adminBtn = document.getElementById('adminBtn');
+  const importBtn = document.getElementById('importBtn');
+  const exportBtn = document.getElementById('exportBtn');
+
+  // Pagination
+  let PAGE = 1, PAGE_SIZE = 6;
+
+  // Load or seed data
+  function seed(){
+    const sample = [
+      {
+        id: id(), title: 'Dangal', year: '2016', director: 'Nitesh Tiwari', cast: 'Aamir Khan, Sakshi Tanwar', category: 'Drama, Sports', rating: 5,
+        poster:'', excerpt:'A heartwarming sports biopic with stellar performances.', content:'Dangal tells the inspiring story of...', trailer:'https://www.youtube.com/watch?v=x_7YlGv9u1g', tags:'biopic,sports', date:'2016-12-21'
+      },
+      {
+        id: id(), title: 'Public Filmz: Debut', year: '2025', director: 'Public Filmz', cast: 'You, Team', category: 'Indie', rating:4,
+        poster:'', excerpt:'Launch post for Public Filmz — add your reviews.', content:'Welcome to Public Filmz. Add reviews from your phone.', trailer:'', tags:'indie,platform', date:new Date().toISOString().split('T')[0]
+      }
+    ];
+    saveToStorage(sample);
+    return sample;
+  }
+
+  function id(){return 'r_'+Math.random().toString(36).slice(2,9)}
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      if(!raw) return seed();
+      return JSON.parse(raw);
+    }catch(e){console.error(e);return seed();}
+  }
+  function saveToStorage(data){localStorage.setItem(LS_KEY, JSON.stringify(data));}
+
+  let DATA = load();
+
+  // Utilities
+  function formatDate(d){if(!d) return ''; const dt = new Date(d); return dt.toLocaleDateString();}
+  function short(text, n=120){if(!text) return ''; return text.length>n? text.slice(0,n)+'…': text}
+
+  // Render categories
+  function rebuildCategories(){
+    const cats = new Set(); DATA.forEach(r=>{(r.category||'').split(',').map(s=>s.trim()).filter(Boolean).forEach(c=>cats.add(c))});
+    categoryFilter.innerHTML = '<option value=\"\">All</option>' + Array.from(cats).map(c=>`<option value=\"${escapeHtml(c)}\">${escapeHtml(c)}</option>`).join('');
+  }
+
+  // Escape helper
+  function escapeHtml(s){if(!s) return ''; return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('\"','&quot;');}
+
+  // Render list
+  function render(){
+    // filters
+    const q = (qInput.value||'').toLowerCase().trim();
+    const cat = categoryFilter.value;
+    const minR = Number(minRating.value||0);
+
+    let items = DATA.slice();
+    if(q) items = items.filter(r=> (r.title||'').toLowerCase().includes(q) || (r.cast||'').toLowerCase().includes(q) || (r.content||'').toLowerCase().includes(q) );
+    if(cat) items = items.filter(r=> (r.category||'').split(',').map(s=>s.trim()).includes(cat));
+    if(minR) items = items.filter(r=>Number(r.rating)>=minR);
+
+    // sort
+    const s = sortBy.value;
+    if(s==='rating') items.sort((a,b)=>b.rating - a.rating);
+    else if(s==='title') items.sort((a,b)=>a.title.localeCompare(b.title));
+    else items.sort((a,b)=> new Date(b.date||0) - new Date(a.date||0));
+
+    // pagination
+    const total = items.length; const pages = Math.max(1, Math.ceil(total/PAGE_SIZE));
+    if(PAGE>pages) PAGE=pages;
+    const start = (PAGE-1)*PAGE_SIZE; const pageItems = items.slice(start, start+PAGE_SIZE);
+
+    reviewsList.innerHTML = pageItems.map(renderCard).join('') || '<div class=\"muted\">No reviews — add one!</div>';
+
+    // pagination UI
+    pagination.innerHTML = '';
+    if(pages>1){
+      for(let i=1;i<=pages;i++){
+        const btn = document.createElement('button'); btn.className='btn ghost'; btn.textContent=i; if(i===PAGE) btn.style.fontWeight='700'; btn.addEventListener('click',()=>{PAGE=i;render()});
+        pagination.appendChild(btn);
+      }
+    }
+
+    rebuildCategories();
+  }
+
+  function renderCard(r){
+    const poster = r.poster || '';
+    const posterHTML = poster? `<img src=\"${poster}\" alt=\"poster\" style=\"width:88px;height:120px;border-radius:8px;object-fit:cover\">` : `<div style=\"width:88px;height:120px;border-radius:8px;background:#071a2b;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px\">No image</div>`;
+    return `
+      <article class=\"card\" data-id=\"${r.id}\">
+        <div class=\"poster\">${posterHTML}</div>
+        <div class=\"meta\">
+          <div class=\"title\">
+            <h3>${escapeHtml(r.title)} <span class=\"small muted\">(${escapeHtml(r.year||'')})</span></h3>
+            <div class=\"row\"><span class=\"rating\">⭐ ${escapeHtml(String(r.rating||0))}</span></div>
+          </div>
+          <div class=\"small muted\">${escapeHtml(r.director||'')} • ${escapeHtml(r.cast||'')}</div>
+          <div class=\"excerpt\">${escapeHtml(r.excerpt||short(r.content,140))}</div>
+          <div style=\"height:6px\"></div>
+          <div class=\"row\" style=\"gap:8px;justify-content:flex-end\">
+            <button class=\"btn\" onclick=\"openReview('${r.id}')\">Read</button>
+            <button class=\"btn ghost\" onclick=\"shareReview('${r.id}')\">Share</button>
+            <button class=\"btn ghost\" onclick=\"enterEdit('${r.id}')\">Edit</button>
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  // Actions
+  window.openReview = function(id){
+    const r = DATA.find(x=>x.id===id); if(!r) return alert('Not found');
+    const html = `
+      <div style=\"padding:14px;max-width:720px;margin:14px auto;background:linear-gradient(180deg,#071428,#05101a);border-radius:12px;color:#eaf2ff\">
+        <h2>${escapeHtml(r.title)} <span class=\"small muted\">(${escapeHtml(r.year||'')})</span></h2>
+        <div class=\"small muted\">${escapeHtml(r.director||'')} • ${escapeHtml(r.cast||'')}</div>
+        <div style=\"height:8px\"></div>
+        ${r.poster? `<div><img src=\"${r.poster}\" alt=\"poster\" style=\"width:100%;max-width:320px;border-radius:8px;display:block\"></div>` : ''}
+        <div style=\"height:8px\"></div>
+        <div class=\"muted\">${escapeHtml(r.content||'')}</div>
+        <div style=\"height:8px\"></div>
+        ${r.trailer? `<div><a href=\"${r.trailer}\" target=\"_blank\" class=\"btn\">Watch Trailer</a></div>` : ''}
+      </div>
+    `;
+    // show modal-like
+    const w = window.open('','_blank'); w.document.write(html); w.document.close();
+  }
+
+  window.shareReview = function(id){
+    const r = DATA.find(x=>x.id===id); if(!r) return;
+    const text = `${r.title} (${r.year}) — ${r.excerpt || short(r.content,120)}\\nRead on Public Filmz.`;
+    if(navigator.share){
+      navigator.share({title:r.title,text,url:location.href}).catch(()=>alert('Share canceled'));
+    }else{
+      prompt('Copy and share this text', text);
+    }
+  }
+
+  window.enterEdit = function(id){
+    const r = DATA.find(x=>x.id===id); if(!r) return;
+    openModal('Edit Review');
+    f.id.value = r.id; f.title.value = r.title; f.year.value = r.year; f.director.value = r.director; f.cast.value = r.cast; f.category.value = r.category; f.rating.value = r.rating; f.trailer.value = r.trailer; f.content.value = r.content; f.tags.value = r.tags; f.excerpt.value = r.excerpt; f.date.value = r.date || '';
+    if(r.poster){ previewPoster.innerHTML = `<img src=\"${r.poster}\" style=\"width:100%;height:200px;object-fit:cover;border-radius:8px\">`; } else previewPoster.textContent='No image';
+    deleteReviewBtn.style.display = 'inline-block';
+  }
+
+  function openModal(title){ modalTitle.textContent = title; modal.classList.add('show'); }
+  function closeModalFn(){ modal.classList.remove('show'); clearForm(); }
+  closeModal.addEventListener('click', closeModalFn);
+
+  addReviewBtn.addEventListener('click', ()=>{ if(!isAdmin()){askAdmin();return;} openModal('Add Review'); deleteReviewBtn.style.display='none'; });
+
+  function clearForm(){ f.id.value=''; f.title.value=''; f.year.value=''; f.director.value=''; f.cast.value=''; f.category.value=''; f.rating.value='5'; f.trailer.value=''; f.content.value=''; f.tags.value=''; f.excerpt.value=''; f.date.value=''; previewPoster.innerHTML='No image'; posterFile.value=''; }
+
+  // poster upload
+  posterFile.addEventListener('change',function(e){ const file = this.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = function(ev){ previewPoster.innerHTML = `<img src=\"${ev.target.result}\" style=\"width:100%;height:200px;object-fit:cover;border-radius:8px\">`; previewPoster.dataset.b64 = ev.target.result; }; reader.readAsDataURL(file); });
+
+  saveReview.addEventListener('click', function(){
+    if(!isAdmin()){ askAdmin(); return; }
+    const payload = {
+      id: f.id.value || id(), title: f.title.value.trim(), year: f.year.value.trim(), director: f.director.value.trim(), cast: f.cast.value.trim(), category: f.category.value.trim(), rating: Number(f.rating.value), trailer: f.trailer.value.trim(), content: f.content.value.trim(), tags: f.tags.value.trim(), excerpt: f.excerpt.value.trim(), date: f.date.value || new Date().toISOString().split('T')[0]
+    };
+    const b64 = previewPoster.dataset.b64 || '';
+    if(b64) payload.poster = b64;
+
+    const idx = DATA.findIndex(x=>x.id===payload.id);
+    if(idx>=0) DATA[idx]=payload; else DATA.unshift(payload);
+    saveToStorage(DATA); render(); closeModalFn(); alert('Saved');
+  });
+
+  deleteReviewBtn.addEventListener('click', function(){ if(!isAdmin()){askAdmin();return;} const idv = f.id.value; if(!idv) return; if(!confirm('Delete this review?')) return; DATA = DATA.filter(x=>x.id!==idv); saveToStorage(DATA); render(); closeModalFn(); });
+
+  // Admin access
+  function isAdmin(){ return sessionStorage.getItem('pf_admin')==='1'; }
+  adminBtn.addEventListener('click', askAdmin);
+
+  function askAdmin(){
+    const pwd = prompt('Enter admin password');
+    if(pwd===ADMIN_PWD){ sessionStorage.setItem('pf_admin','1'); alert('Admin mode on'); } else alert('Wrong password');
+  }
+
+  // export/import
+  exportBtn.addEventListener('click', function(){ const data = JSON.stringify(DATA, null, 2); const blob = new Blob([data],{type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='public-filmz-data.json'; a.click(); URL.revokeObjectURL(url); });
+
+  importBtn.addEventListener('click', function(){
+    const input = document.createElement('input'); input.type='file'; input.accept='application/json'; input.onchange = function(){ const f = this.files[0]; const reader = new FileReader(); reader.onload = function(ev){ try{ const parsed = JSON.parse(ev.target.result); if(!Array.isArray(parsed)) throw 'Invalid file'; DATA = parsed; saveToStorage(DATA); render(); alert('Imported'); }catch(e){alert('Invalid JSON file');} }; reader.readAsText(f); }; input.click();
+  });
+
+  // Search & filters
+  document.getElementById('searchBtn').addEventListener('click', ()=>{ PAGE=1; render(); });
+  document.getElementById('clearFilters').addEventListener('click', ()=>{ qInput.value=''; categoryFilter.value=''; minRating.value='0'; sortBy.value='new'; PAGE=1; render(); });
+
+  // quick admin from bookmarklet? not necessary
+
+  // init
+  rebuildCategories(); render();
+
+  // small helpers: if user clicks review area, delegate clicks for Edit/Read handled inline
+
+  // Keyboard shortcuts (phone won't use but helpful for desktop)
+  document.addEventListener('keydown', function(e){ if(e.key==='/' && document.activeElement!==qInput){ e.preventDefault(); qInput.focus(); } });
+
+})();
+</script>
+
+</body>
+</html>
