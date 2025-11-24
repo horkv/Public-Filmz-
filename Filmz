@@ -1,0 +1,59 @@
+# 🎬 Public-Filmz  
+A simple and fast Movie Review Website created using **HTML, CSS & JavaScript**.  
+This project is designed to provide clean movie descriptions, posters, and user-friendly browsing.
+
+---
+
+## 🚀 Live Website  
+🔗 https://horkv.github.io/Public-Filmz-/
+
+---
+
+## 📌 Features  
+- ✔ Simple and responsive UI  
+- ✔ Fast loading single-page design  
+- ✔ Movie posters + descriptions  
+- ✔ Clean navigation  
+- ✔ Mobile-friendly layout  
+- ✔ Easy to edit HTML file  
+
+---
+
+## 📁 Project Structure---
+
+## 🛠️ Technologies Used  
+- **HTML5**  
+- **CSS3**  
+- **JavaScript**  
+- **GitHub Pages** (Hosting)
+
+---
+
+## 📚 How to Edit the Website  
+1. Open `index.html` in GitHub  
+2. Click **Edit**  
+3. Make changes (text, images, movie cards)  
+4. Click **Commit changes**  
+Website automatically updates in 1–2 minutes.
+
+---
+
+## 🌐 Hosting  
+This project is hosted using **GitHub Pages**, which provides free and fast static hosting.
+
+---
+
+## 🤝 Contributing  
+Pull Requests are welcome.  
+Feel free to submit changes for improvements or bug fixes.
+
+---
+
+## 📄 License  
+This project is open-source under the **MIT License**.
+
+---
+
+## ✨ Author  
+**Hatim (Horkv)**  
+Movie review & content creator.
